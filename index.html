@@ -1302,13 +1302,26 @@
 
     <script>
         const audio = document.getElementById('birthday-audio');
-        // Pick one of the two songs randomly whenever the website is opened.
-        const birthdaySongs = [
-            'https://raw.githubusercontent.com/vaibhavpandit1947-alt/G-Photo-/main/Khoobsurat%20Ek%20Deewane%20Ki%20Deewaniyat%20320%20Kbps.mp3',
-            'Dilruba%20Dilnasheen%20cut.mp3'
-        ];
-        audio.src = birthdaySongs[Math.floor(Math.random() * birthdaySongs.length)];
+        // Song 1 plays during the celebration; Song 2 starts when the photo gallery opens.
+        const celebrationSong = 'https://raw.githubusercontent.com/vaibhavpandit1947-alt/G-Photo-/main/Khoobsurat%20Ek%20Deewane%20Ki%20Deewaniyat%20320%20Kbps.mp3';
+        const gallerySong = 'Dilruba%20Dilnasheen%20cut.mp3';
+        audio.src = celebrationSong;
         audio.load();
+
+        function playGallerySong() {
+            audio.pause();
+            audio.src = gallerySong;
+            audio.load();
+            audio.currentTime = 0;
+            audio.play().then(() => {
+                audioBtn.classList.add('visible', 'playing');
+                audioIcon.innerText = '🎵';
+            }).catch(() => {
+                // If the browser blocks playback, the visible music button can start it.
+                audioBtn.classList.add('visible');
+                audioBtn.classList.remove('playing');
+            });
+        }
 
         const audioBtn = document.getElementById('audio-btn');
         const audioIcon = document.getElementById('audio-icon');
@@ -1477,7 +1490,10 @@
                     }, 1500);
                 }, 1000);
             }
-            if (pageId === 'gallery-page') startGalleryEffects();
+            if (pageId === 'gallery-page') {
+                startGalleryEffects();
+                playGallerySong();
+            }
             if (pageId === 'final-secret-page') {
                 startSparkles('final-card');
                 const text2 = "Hello Miss<br><br>Happy Happy Happy Birthday to the most beautiful person of my life.<br>No matter what happens, you will always have a special place in my heart.<br>I hope your every dream comes true and your smile never fades.<br><br><span style=\"font-family: 'Dancing Script'; font-size: 2rem; color: #ffd1df; text-shadow: 0 0 10px rgba(233,184,91,0.6);\">I Love You Forever ❤️✨</span>";
@@ -1491,7 +1507,9 @@
             introScreen.classList.remove('hidden', 'leaving', 'intro-ready');
             window.setTimeout(() => introScreen.classList.add('intro-ready'), 250);
             audio.pause();
-            audio.currentTime = 0; 
+            audio.currentTime = 0;
+            audio.src = celebrationSong;
+            audio.load();
             audioBtn.classList.remove('playing', 'visible');
             audioIcon.innerText = "🎵";
             
