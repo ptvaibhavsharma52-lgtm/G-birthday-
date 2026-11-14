@@ -1306,14 +1306,23 @@
         const celebrationSong = 'https://raw.githubusercontent.com/vaibhavpandit1947-alt/G-Photo-/main/Khoobsurat%20Ek%20Deewane%20Ki%20Deewaniyat%20320%20Kbps.mp3';
         const gallerySong = 'Dilruba%20Dilnasheen%20cut.mp3';
         audio.src = celebrationSong;
+        audio.preload = 'auto';
         audio.load();
+
+        // Load the gallery track in the background while the visitor moves
+        // through the earlier pages, instead of downloading it only on gallery open.
+        const galleryAudio = new Audio();
+        galleryAudio.src = gallerySong;
+        galleryAudio.preload = 'auto';
+        galleryAudio.load();
+
+        let currentAudio = audio;
 
         function playGallerySong() {
             audio.pause();
-            audio.src = gallerySong;
-            audio.load();
-            audio.currentTime = 0;
-            audio.play().then(() => {
+            currentAudio = galleryAudio;
+            galleryAudio.currentTime = 0;
+            galleryAudio.play().then(() => {
                 audioBtn.classList.add('visible', 'playing');
                 audioIcon.innerText = '🎵';
             }).catch(() => {
@@ -1430,12 +1439,12 @@
         });
 
         function toggleAudio() {
-            if (audio.paused) {
-                audio.play().catch(() => {});
+            if (currentAudio.paused) {
+                currentAudio.play().catch(() => {});
                 audioBtn.classList.add('playing');
                 audioIcon.innerText = "🎵";
             } else {
-                audio.pause();
+                currentAudio.pause();
                 audioBtn.classList.remove('playing');
                 audioIcon.innerText = "🔇";
             }
@@ -1506,10 +1515,13 @@
             const introScreen = document.getElementById('cinematic-intro');
             introScreen.classList.remove('hidden', 'leaving', 'intro-ready');
             window.setTimeout(() => introScreen.classList.add('intro-ready'), 250);
+            galleryAudio.pause();
+            galleryAudio.currentTime = 0;
             audio.pause();
             audio.currentTime = 0;
             audio.src = celebrationSong;
             audio.load();
+            currentAudio = audio;
             audioBtn.classList.remove('playing', 'visible');
             audioIcon.innerText = "🎵";
             
