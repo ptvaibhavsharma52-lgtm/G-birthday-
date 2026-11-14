@@ -1085,6 +1085,29 @@
         @media (max-width:520px) { .wish-line { font-size:1.35rem; line-height:1.4; } }
         @media (pointer:coarse) { .gold-cursor-spark { display:none; } }
 
+
+        /* Soft transition before the photo gallery and its music begin */
+        .gallery-transition-overlay {
+            position: fixed; inset: 0; z-index: 99999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 18px; text-align: center; padding: 24px;
+            background: radial-gradient(circle at center, rgba(89, 28, 65, .96), rgba(18, 8, 25, .99));
+            opacity: 0; transform: scale(1.08);
+            transition: opacity .55s ease, transform .75s cubic-bezier(.2,.8,.2,1);
+            pointer-events: none;
+        }
+        .gallery-transition-overlay.show { opacity: 1; transform: scale(1); }
+        .gallery-transition-overlay.fade-out { opacity: 0; transform: scale(1.06); }
+        .gallery-transition-title {
+            color: #ffe4ef; font-family: 'Dancing Script', cursive;
+            font-size: clamp(2rem, 8vw, 3.5rem);
+            text-shadow: 0 0 18px rgba(255, 190, 220, .7);
+            animation: galleryTitleFloat 1.15s ease-in-out infinite alternate;
+        }
+        .gallery-transition-heart { font-size: 2.3rem; animation: galleryHeartPulse .8s ease-in-out infinite alternate; }
+        .gallery-transition-subtitle { color: #f8d8e7; font-size:  .95rem; letter-spacing: 2px; opacity: .9; }
+        @keyframes galleryTitleFloat { from { transform: translateY(7px); opacity: .78; } to { transform: translateY(-5px); opacity: 1; } }
+        @keyframes galleryHeartPulse { from { transform: scale(.85); } to { transform: scale(1.18); } }
     </style>
 </head>
 
@@ -1185,7 +1208,7 @@
                     <div class="typewriter-container">
                         <p id="typewriter-text-1" style="font-family: 'Montserrat', sans-serif; font-size: clamp(0.88rem, 1.55vw, 1.02rem); line-height: 1.45; font-weight: 400; color: rgba(255,255,255,0.96); margin: 0;"></p>
                     </div>
-                    <button id="gallery-next-btn" class="btn-enter" style="margin-top: 40px; box-shadow: none; display: none;" onclick="stopCurtainBalloons(); transitionTo('gallery-page')">🤗</button>
+                    <button id="gallery-next-btn" class="btn-enter" style="margin-top: 40px; box-shadow: none; display: none;" onclick="stopCurtainBalloons(); galleryTransition()">🤗</button>
                 </div>
             </div>
         </div>
@@ -1304,7 +1327,7 @@
         const audio = document.getElementById('birthday-audio');
         // Song 1 plays during the celebration; Song 2 starts when the photo gallery opens.
         const celebrationSong = 'https://raw.githubusercontent.com/vaibhavpandit1947-alt/G-Photo-/main/Khoobsurat%20Ek%20Deewane%20Ki%20Deewaniyat%20320%20Kbps.mp3';
-        const gallerySong = 'Dilruba%20Dilnasheen%20cut.mp3';
+        const gallerySong = 'https://raw.githubusercontent.com/vaibhavpandit1947-alt/G-Photo-/main/2Dilruba%20Dilnasheen%20cut.mp3';
         audio.src = celebrationSong;
         audio.preload = 'auto';
         audio.load();
@@ -1314,22 +1337,52 @@
         const galleryAudio = new Audio();
         galleryAudio.src = gallerySong;
         galleryAudio.preload = 'auto';
+        galleryAudio.loop = true;
+        galleryAudio.volume = 0;
         galleryAudio.load();
 
         let currentAudio = audio;
 
-        function playGallerySong() {
+        // Start playback directly inside the user's tap (mobile browsers require this).
+        // Keep it silent during the transition, then fade it in when the gallery appears.
+        function beginGallerySongFromTap() {
             audio.pause();
             currentAudio = galleryAudio;
+            galleryAudio.pause();
             galleryAudio.currentTime = 0;
+            galleryAudio.volume = 0.02;
             galleryAudio.play().then(() => {
                 audioBtn.classList.add('visible', 'playing');
                 audioIcon.innerText = '🎵';
             }).catch(() => {
-                // If the browser blocks playback, the visible music button can start it.
                 audioBtn.classList.add('visible');
                 audioBtn.classList.remove('playing');
             });
+        }
+
+        function playGallerySong() {
+            audio.pause();
+            currentAudio = galleryAudio;
+            const fadeIn = () => {
+                const start = performance.now();
+                const duration = 900;
+                function step(now) {
+                    const progress = Math.min(1, (now - start) / duration);
+                    galleryAudio.volume = 0.02 + (0.98 * progress);
+                    if (progress < 1 && !galleryAudio.paused) requestAnimationFrame(step);
+                }
+                requestAnimationFrame(step);
+            };
+            if (galleryAudio.paused) {
+                galleryAudio.play().then(fadeIn).catch(() => {
+                    audioBtn.classList.add('visible');
+                    audioBtn.classList.remove('playing');
+                });
+            } else {
+                fadeIn();
+            }
+            audioBtn.classList.add('visible');
+            audioIcon.innerText = '🎵';
         }
 
         const audioBtn = document.getElementById('audio-btn');
@@ -1475,6 +1528,24 @@
             type();
         }
 
+        let galleryTransitionRunning = false;
+        function galleryTransition() {
+            if (galleryTransitionRunning) return;
+            galleryTransitionRunning = true;
+            beginGallerySongFromTap();
+            const overlay = document.createElement('div');
+            overlay.className = 'gallery-transition-overlay';
+            overlay.innerHTML = '<div class="gallery-transition-heart">💗 ✨ 💗</div><div class="gallery-transition-title">A Little World of Memories</div>';
+            document.body.appendChild(overlay);
+            requestAnimationFrame(() => overlay.classList.add('show'));
+            // Let the soft animation finish before opening the gallery and starting its song.
+            setTimeout(() => {
+                transitionTo('gallery-page');
+                overlay.classList.add('fade-out');
+                setTimeout(() => { overlay.remove(); galleryTransitionRunning = false; }, 650);
+            }, 1450);
+        }
+
         function transitionTo(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             const target = document.getElementById(pageId);
@@ -1517,6 +1588,7 @@
             window.setTimeout(() => introScreen.classList.add('intro-ready'), 250);
             galleryAudio.pause();
             galleryAudio.currentTime = 0;
+            galleryAudio.volume = 0;
             audio.pause();
             audio.currentTime = 0;
             audio.src = celebrationSong;
