@@ -1298,12 +1298,18 @@
         </div>
     </section>
 
-    <audio id="birthday-audio" loop preload="auto">
-        <source src="https://raw.githubusercontent.com/vaibhavpandit1947-alt/G-Photo-/main/Khoobsurat%20Ek%20Deewane%20Ki%20Deewaniyat%20320%20Kbps.mp3" type="audio/mpeg">
-    </audio>
+    <audio id="birthday-audio" loop preload="auto"></audio>
 
     <script>
         const audio = document.getElementById('birthday-audio');
+        // Pick one of the two songs randomly whenever the website is opened.
+        const birthdaySongs = [
+            'https://raw.githubusercontent.com/vaibhavpandit1947-alt/G-Photo-/main/Khoobsurat%20Ek%20Deewane%20Ki%20Deewaniyat%20320%20Kbps.mp3',
+            'Dilruba%20Dilnasheen%20cut.mp3'
+        ];
+        audio.src = birthdaySongs[Math.floor(Math.random() * birthdaySongs.length)];
+        audio.load();
+
         const audioBtn = document.getElementById('audio-btn');
         const audioIcon = document.getElementById('audio-icon');
 
