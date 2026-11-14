@@ -1327,54 +1327,50 @@
         const audio = document.getElementById('birthday-audio');
         // Song 1 plays during the celebration; Song 2 starts when the photo gallery opens.
         const celebrationSong = 'https://raw.githubusercontent.com/vaibhavpandit1947-alt/G-Photo-/main/Khoobsurat%20Ek%20Deewane%20Ki%20Deewaniyat%20320%20Kbps.mp3';
-        const gallerySong = 'https://raw.githubusercontent.com/vaibhavpandit1947-alt/G-Photo-/main/2Dilruba%20Dilnasheen%20cut.mp3';
+        const gallerySong = 'https://raw.githubusercontent.com/ptvaibhavsharma52-lgtm/G-birthday-/main/Dilruba%20Dilnasheen%20cut.mp3';
         audio.src = celebrationSong;
         audio.preload = 'auto';
         audio.load();
 
-        // Load the gallery track in the background while the visitor moves
-        // through the earlier pages, instead of downloading it only on gallery open.
-        const galleryAudio = new Audio();
-        galleryAudio.src = gallerySong;
-        galleryAudio.preload = 'auto';
-        galleryAudio.loop = true;
-        galleryAudio.volume = 0;
-        galleryAudio.load();
-
         let currentAudio = audio;
 
-        // Start playback directly inside the user's tap (mobile browsers require this).
-        // Keep it silent during the transition, then fade it in when the gallery appears.
+        // Switch the existing audio element to the gallery song directly on the
+        // gallery button tap. Reusing the same element is more reliable on mobile.
         function beginGallerySongFromTap() {
             audio.pause();
-            currentAudio = galleryAudio;
-            galleryAudio.pause();
-            galleryAudio.currentTime = 0;
-            galleryAudio.volume = 0.02;
-            galleryAudio.play().then(() => {
-                audioBtn.classList.add('visible', 'playing');
-                audioIcon.innerText = '🎵';
-            }).catch(() => {
-                audioBtn.classList.add('visible');
-                audioBtn.classList.remove('playing');
-            });
+            audio.src = gallerySong;
+            audio.loop = true;
+            audio.currentTime = 0;
+            audio.volume = 0.02;
+            currentAudio = audio;
+            audio.load();
+            const playPromise = audio.play();
+            if (playPromise && typeof playPromise.then === 'function') {
+                playPromise.then(() => {
+                    audioBtn.classList.add('visible', 'playing');
+                    audioIcon.innerText = '🎵';
+                }).catch(() => {
+                    audioBtn.classList.add('visible');
+                    audioBtn.classList.remove('playing');
+                });
+            }
         }
 
         function playGallerySong() {
             audio.pause();
-            currentAudio = galleryAudio;
+            currentAudio = audio;
             const fadeIn = () => {
                 const start = performance.now();
                 const duration = 900;
                 function step(now) {
                     const progress = Math.min(1, (now - start) / duration);
-                    galleryAudio.volume = 0.02 + (0.98 * progress);
-                    if (progress < 1 && !galleryAudio.paused) requestAnimationFrame(step);
+                    audio.volume = 0.02 + (0.98 * progress);
+                    if (progress < 1 && !audio.paused) requestAnimationFrame(step);
                 }
                 requestAnimationFrame(step);
             };
-            if (galleryAudio.paused) {
-                galleryAudio.play().then(fadeIn).catch(() => {
+            if (audio.paused) {
+                audio.play().then(fadeIn).catch(() => {
                     audioBtn.classList.add('visible');
                     audioBtn.classList.remove('playing');
                 });
@@ -1586,9 +1582,6 @@
             const introScreen = document.getElementById('cinematic-intro');
             introScreen.classList.remove('hidden', 'leaving', 'intro-ready');
             window.setTimeout(() => introScreen.classList.add('intro-ready'), 250);
-            galleryAudio.pause();
-            galleryAudio.currentTime = 0;
-            galleryAudio.volume = 0;
             audio.pause();
             audio.currentTime = 0;
             audio.src = celebrationSong;
