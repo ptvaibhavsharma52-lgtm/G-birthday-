@@ -1035,22 +1035,22 @@
         }
         #cinematic-intro.intro-ready .intro-kicker {
             opacity: 1 !important;
-            animation: introFadeUp .85s ease-out 1.22s both !important;
+            animation: introFadeUp .55s ease-out .55s both !important;
         }
         #cinematic-intro.intro-ready .intro-heading {
             opacity: 1 !important;
-            animation: birthdayTextReveal 1.05s cubic-bezier(.2,.75,.25,1) 1.62s both,
-                       introHeadingFloat 4s 2.75s ease-in-out infinite,
-                       introGoldShimmer 5s 2.75s linear infinite !important;
+            animation: birthdayTextReveal .65s cubic-bezier(.2,.75,.25,1) .85s both,
+                       introHeadingFloat 4s 1.5s ease-in-out infinite,
+                       introGoldShimmer 5s 1.5s linear infinite !important;
         }
         #cinematic-intro.intro-ready .intro-sub {
             opacity: 1 !important;
-            animation: introFadeUp .9s ease-out 2.18s both !important;
+            animation: introFadeUp .6s ease-out 1.25s both !important;
         }
         #cinematic-intro.intro-ready .intro-enter {
             opacity: 1 !important;
-            animation: introFadeUp .9s ease-out 2.55s both,
-                       introButtonGlow 2.4s 3.5s ease-in-out infinite !important;
+            animation: introFadeUp .6s ease-out 1.55s both,
+                       introButtonGlow 2.4s 2.3s ease-in-out infinite !important;
         }
         @keyframes crownSingleZoom {
             0% { opacity:0; transform:scale(.38) translateY(18px); filter:blur(10px) drop-shadow(0 0 0 rgba(233,184,91,0)); }
@@ -1388,6 +1388,8 @@
         let myConfetti;
 
         function triggerInnerCurtainConfetti() {
+            // The celebration must keep working even if the optional CDN is unavailable.
+            if (typeof window.confetti !== 'function') return;
             const canvas = document.getElementById('inner-confetti-canvas');
             if (!canvas) return;
 
@@ -1501,22 +1503,39 @@
 
         function runTypewriter(elementId, text, speed, callback) {
             const element = document.getElementById(elementId);
-            element.innerHTML = "";
+            if (!element) return;
+            element.replaceChildren();
             let i = 0;
+
+            // The curtain birthday wish is revealed in small batches for a much faster,
+            // smoother read-in. Other typewriter messages keep their original pacing.
+            const charsPerTick = elementId === 'typewriter-text-1' ? 4 : 1;
+
             function type() {
-                if (i < text.length) {
+                let added = 0;
+                while (i < text.length && added < charsPerTick) {
                     if (text.substr(i, 4) === "<br>") {
-                        element.innerHTML += "<br>";
+                        element.appendChild(document.createElement('br'));
                         i += 4;
                     } else if (text.substr(i, 6) === "<span ") {
                         const closingIdx = text.indexOf("</span>", i);
-                        element.innerHTML += text.substr(i, closingIdx - i + 7);
-                        i = closingIdx + 7;
+                        if (closingIdx !== -1) {
+                            const spanMarkup = text.substring(i, closingIdx + 7);
+                            const template = document.createElement('template');
+                            template.innerHTML = spanMarkup;
+                            element.appendChild(template.content.cloneNode(true));
+                            i = closingIdx + 7;
+                        } else {
+                            element.appendChild(document.createTextNode(text.charAt(i++)));
+                        }
                     } else {
-                        element.innerHTML += text.charAt(i);
-                        i++;
+                        element.appendChild(document.createTextNode(text.charAt(i++)));
                     }
-                    setTimeout(type, speed);
+                    added++;
+                }
+
+                if (i < text.length) {
+                    setTimeout(type, elementId === 'typewriter-text-1' ? 10 : speed);
                 } else if (callback) {
                     callback();
                 }
@@ -1558,12 +1577,14 @@
 
                     startCurtainBalloons();
                     startSparkles('message-card');
-                    const text1 = "May Mahadev always bless you and give you everything you deserve. May you shine like the moon, not just today but every day. May your life always be filled with happiness and success. May all your dreams come true, and may you always keep smiling just the way you do. ✨.<br>I just want you to always stay happy, achieve great things in life, and never feel that you're missing anything. Take care of yourself and never stress about anything. No matter who stays or leaves,I'll always be there for you.<br>Once again, Happiest Birthday! May every day of your life be filled with happiness and give you countless reasons to smile. 👑💖🦋✨";
-                    setTimeout(() =>
-                        runTypewriter('typewriter-text-1', text1, 6, () => {
+                    const text1 = "May Mahadev always bless you and give you everything you deserve. May you shine✨ like the moon🌙, not just today but every day. May your life always be filled with happiness and success. May all your dreams come true, and may you always keep smiling just the way you do. ✨.<br>I just want you to always stay happy, achieve great things in life, and never feel that you're missing anything. Take care of yourself and never stress about anything. No matter who stays or leaves,I'll always be there for you.You are the best one in the world 🌍.<br>Once again, Happiest Birthday Madam! May every day of your life be filled with happiness and give you countless reasons to smile. 👑💖🦋✨";
+                    // Wait until the 2.5s curtain-opening transition has fully finished,
+                    // then leave a short pause before revealing the birthday wish.
+                    setTimeout(() => {
+                        runTypewriter('typewriter-text-1', text1, 2, () => {
                             document.getElementById('gallery-next-btn').style.display = 'inline-block';
                         });
-                    }, 1500);
+                    }, 2800);
                 }, 1000);
             }
             if (pageId === 'gallery-page') {
@@ -1807,9 +1828,18 @@
             activeMemoryIndex = (index + cards.length) % cards.length;
             const card = cards[activeMemoryIndex];
             const sourceImage = card.querySelector('.memory-image');
-            if (!sourceImage || sourceImage.dataset.fallbackApplied) return;
-            document.getElementById('lightbox-img').src = sourceImage.currentSrc || sourceImage.src;
-            document.getElementById('lightbox-caption').innerText = card.querySelector('.polaroid-label').innerText;
+            if (!sourceImage) return;
+            const lightboxImage = document.getElementById('lightbox-img');
+            const caption = card.querySelector('.polaroid-label').innerText;
+            if (sourceImage.dataset.fallbackApplied || !sourceImage.naturalWidth) {
+                lightboxImage.removeAttribute('src');
+                lightboxImage.style.display = 'none';
+                document.getElementById('lightbox-caption').innerText = `${caption} · Photo temporarily unavailable`;
+            } else {
+                lightboxImage.style.display = 'block';
+                lightboxImage.src = sourceImage.currentSrc || sourceImage.src;
+                document.getElementById('lightbox-caption').innerText = caption;
+            }
             document.getElementById('lightbox-counter').innerText = `${activeMemoryIndex + 1} / ${cards.length}`;
             document.getElementById('lightbox').classList.add('active');
         }
@@ -1824,7 +1854,8 @@
             stopSlideshow();
             showMemory(0);
             slideshowTimer = setInterval(() => changeLightbox(1), 3500);
-            document.getElementById('slideshow-btn').innerText = '▶ SLIDESHOW PLAYING';
+            const button = document.getElementById('slideshow-btn');
+            if (button) button.innerText = '▶ SLIDESHOW PLAYING';
         }
         function stopSlideshow() {
             if (slideshowTimer) clearInterval(slideshowTimer);
