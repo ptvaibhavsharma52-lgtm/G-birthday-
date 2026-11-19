@@ -1507,9 +1507,9 @@
             element.replaceChildren();
             let i = 0;
 
-            // The curtain birthday wish is revealed in small batches for a much faster,
-            // smoother read-in. Other typewriter messages keep their original pacing.
-            const charsPerTick = elementId === 'typewriter-text-1' ? 4 : 1;
+            // Reveal the curtain birthday wish one character at a time for readable pacing.
+            // Other typewriter messages keep their original pacing.
+            const charsPerTick = 1;
 
             function type() {
                 let added = 0;
@@ -1535,7 +1535,7 @@
                 }
 
                 if (i < text.length) {
-                    setTimeout(type, elementId === 'typewriter-text-1' ? 12 : speed);
+                    setTimeout(type, elementId === 'typewriter-text-1' ? 35 : speed);
                 } else if (callback) {
                     callback();
                 }
